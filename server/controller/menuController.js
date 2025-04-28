@@ -14,4 +14,5 @@ const getAllMenu = async (req, res, next) => {
     }
   };
 
+
   export {getAllMenu};
