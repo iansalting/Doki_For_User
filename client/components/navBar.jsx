@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./Navbar.css";
+import "./navbar.css";
 
 function Navbar() {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,7 +10,7 @@ function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
 
-  // Close mobile menu when clicking outside
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isMobileMenuOpen && !event.target.closest('.navbar')) {
@@ -22,7 +22,7 @@ function Navbar() {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [isMobileMenuOpen]);
 
-  // Close mobile menu on route change
+
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [navigate]);
@@ -33,7 +33,7 @@ function Navbar() {
 
   const handleLogoutClick = () => {
     setShowConfirmDialog(true);
-    setIsMobileMenuOpen(false); // Close mobile menu when logout is clicked
+    setIsMobileMenuOpen(false); 
   };
 
   const handleLogout = async () => {
