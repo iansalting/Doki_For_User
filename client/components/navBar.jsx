@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import "./navbar.css";
+import "./navBar.css";
+
 
 function Navbar() {
   const [isLoading, setIsLoading] = useState(false);
