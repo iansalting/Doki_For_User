@@ -1,0 +1,28 @@
+# Node modules
+client/node_modules/
+server/node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+client/.env
+server/.env
+.env
+
+# Build output
+client/build/
+client/dist/
+
+# OS/system files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+
+# Test coverage
+coverage/

@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const userOrderSchema = new mongoose.Schema({
-    user: {
+    users: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true
