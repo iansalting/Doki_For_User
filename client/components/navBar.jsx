@@ -118,7 +118,7 @@ function Navbar() {
         {/* Navigation Menu */}
         <ul className={isMobileMenuOpen ? 'active' : ''}>
           <li>
-            <Link to="/orders" onClick={handleLinkClick}>
+            <Link to="/order" onClick={handleLinkClick}>
               My Orders
             </Link>
           </li>

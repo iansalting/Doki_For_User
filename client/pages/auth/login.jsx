@@ -33,9 +33,21 @@ export default function Login() {
       if (response.ok) {
         showMessage("success", "Login successful!");
         setFormData({ email: "", password: "" });
-        setTimeout(() => navigate("/orders"), 1000);
+        setTimeout(() => navigate("/order"), 1000);
       } else {
-        showMessage("error", data.message || "Login failed");
+        switch (response.status) {
+          case 400:
+            showMessage("error", data.message || "Missing email or password");
+            break;
+          case 401:
+            showMessage("error", "Wrong password. Please try again.");
+            break;
+          case 404:
+            showMessage("error", "Account with this email was not found.");
+            break;
+          default:
+            showMessage("error", data.message || "Something went wrong.");
+        }
       }
     } catch (error) {
       showMessage("error", "Network error. Please try again.");

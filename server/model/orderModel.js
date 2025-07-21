@@ -3,7 +3,11 @@ import mongoose from "mongoose";
 const userOrderSchema = new mongoose.Schema({
     users: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "users",
+        required: true
+    },
+    customerName: {
+        type: String,
         required: true
     },
     status: {
@@ -17,10 +21,20 @@ const userOrderSchema = new mongoose.Schema({
             ref: "Menu",
             required: true
         },
+        selectedSize: {
+            type: String,
+            enum: ["Classic", "Deluxe", "Supreme"],
+            default: "Classic",
+            required: true
+        },
         quantity: {
             type: Number,
             required: true,
             default: 1
+        },
+        price: {
+            type: Number,
+            required: true
         }
     }],
     bills: {
@@ -30,7 +44,7 @@ const userOrderSchema = new mongoose.Schema({
     },
     payment: {
         type: String,
-        enum: ["cashless", "cash", "stripe"],
+        enum: ["cashless", "cash"],
         default: "cashless",
         required: true
     },
@@ -38,13 +52,13 @@ const userOrderSchema = new mongoose.Schema({
         paymentIntentId: { type: String },
         paymentMethodId: { type: String },
         stripeCustomerId: { type: String },
-        paymentStatus: { 
-            type: String, 
+        paymentStatus: {
+            type: String,
             enum: ["pending", "succeeded", "failed", "refunded"],
             default: "pending"
         },
         paymentTimestamp: { type: Date }
-    }
+    },
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', userOrderSchema);

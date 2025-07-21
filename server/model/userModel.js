@@ -43,6 +43,12 @@ const userSchema = new mongoose.Schema(
             default: 1,
             min: [1, "Quantity must be at least 1"],
           },
+          selectedSize: {
+            type: String,
+            enum: ["Classic", "Deluxe", "Supreme"],
+            default: "Classic",
+            required: true,
+          },
         },
       ],
       validate: {
@@ -61,6 +67,5 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-
 const User = mongoose.model("user", userSchema);
-export default User;
+export default User; 

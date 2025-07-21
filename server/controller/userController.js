@@ -87,36 +87,34 @@ const login = async (req, res, next) => {
     const { password, email } = req.body;
 
     if (!password || !email) {
-      return next(createHttpError(400, "All fields are required"));
+      return res.status(400).json({ message: "All fields are required" });
     }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
-      return next(createHttpError(400, "Invalid email or password"));
+      return res.status(404).json({ message: "User not found" });
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return next(createHttpError(400, "Invalid email or password"));
+      return res.status(401).json({ message: "Wrong password, try again" });
     }
 
-
     if (!user.isVerified) {
-       return next(createHttpError(400, "Please verify your email before logging in"));
-     }
+      return res.status(400).json({ message: "Please verify your email before logging in" });
+    }
 
     const token = jwt.sign({ id: user._id }, Config.accessTokenSecret, {
-      expiresIn: "24h",  
+      expiresIn: "24h",
     });
 
     res.cookie("accessToken", token, {
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, 
-      secure: process.env.NODE_ENV === "production", 
+      maxAge: 24 * 60 * 60 * 1000,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
     });
 
-    // Return user data without password
     const userResponse = {
       _id: user._id,
       userName: user.userName,
@@ -131,9 +129,11 @@ const login = async (req, res, next) => {
       data: userResponse,
     });
   } catch (error) {
-    next(error);
+    console.error("Login error:", error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 const update = async (req, res, next) => {
   try {

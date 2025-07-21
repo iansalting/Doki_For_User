@@ -17,13 +17,14 @@ function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const navbarRoutes = ["/orders", "/cart"];
+  const navbarRoutes = ["/order", "/cart"];
 
-  // Check auth status on mount
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/user/data", { withCredentials: true });
+        const res = await axios.get("http://localhost:5000/user/data", {
+          withCredentials: true,
+        });
         setUser(res.data.user);
       } catch (error) {
         setUser(null);
@@ -36,7 +37,9 @@ function App() {
   }, []);
 
   const shouldShowNavbar =
-    user && navbarRoutes.some((route) => location.pathname.startsWith(route));
+    !loading &&
+    user &&
+    navbarRoutes.some((route) => location.pathname.startsWith(route));
 
   if (loading) return <div>Loading...</div>;
 
@@ -48,9 +51,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />c 
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-email/:token" element={<VerifyEmail />} />
-        <Route path="/orders" element={<Order />} />
+        <Route path="/order" element={<Order />} />
         <Route path="/cart" element={<Cart />} />
       </Routes>
     </>

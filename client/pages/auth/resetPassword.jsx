@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Lock } from "lucide-react";
+import axios from "axios";
 import './resetPassword.css';
 
 export default function ResetPassword() {
@@ -50,22 +51,19 @@ export default function ResetPassword() {
     setIsLoading(true);
     
     try {
-      const res = await fetch(
+      // Using axios instead of fetch
+      const response = await axios.post(
         `http://localhost:5000/user/reset-password/${token}`,
+        { password: formData.password },
         {
-          method: "POST",
+          withCredentials: true, // Include cookies
           headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({ password: formData.password }),
+            'Content-Type': 'application/json'
+          }
         }
       );
 
-      const data = await res.json();
-
-      if (!res.ok) throw new Error(data.message || "Failed to reset password");
-
+      // Axios automatically parses JSON response
       setMessage({
         type: "success",
         text: "Password reset successful! Redirecting to login...",
@@ -74,8 +72,16 @@ export default function ResetPassword() {
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-    } catch (err) {
-      setMessage({ type: "error", text: err.message });
+      
+    } catch (error) {
+      // Axios error handling
+      const errorMessage = error.response?.data?.message || 
+                          error.message || 
+                          "Failed to reset password";
+      
+      setMessage({ type: "error", text: errorMessage });
+      console.error("Reset password error:", error);
+      
     } finally {
       setIsLoading(false);
     }
