@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ChefHat,
   ShoppingCart,
@@ -18,8 +18,6 @@ const Order = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState({});
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -29,14 +27,8 @@ const Order = () => {
   const [modalQuantity, setModalQuantity] = useState(1);
   const [modalSelectedSize, setModalSelectedSize] = useState(null);
 
-  // Enhanced image loading states
-  const [imageErrors, setImageErrors] = useState({});
-  const [imageLoading, setImageLoading] = useState({});
-
   // Enhanced notification system
   const [notifications, setNotifications] = useState([]);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmDialogConfig, setConfirmDialogConfig] = useState({});
 
   useEffect(() => {
     fetchMenus();
@@ -46,17 +38,10 @@ const Order = () => {
     try {
       const response = await fetch("http://localhost:5000/api/menu/");
       const data = await response.json();
+      
       if (data.success) {
-        console.log("Menu data received:", data.data); // Debug log
         setMenus(data.data || []);
         setCategories(["All", ...(data.categories || [])]);
-        
-        // Log image URLs for debugging
-        data.data?.forEach(menu => {
-          if (menu.imageUrl) {
-            console.log(`${menu.name} image URL:`, menu.imageUrl);
-          }
-        });
       }
     } catch (error) {
       console.error("Error fetching menus:", error);
@@ -64,15 +49,6 @@ const Order = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const showMessage = (text, type) => {
-    setMessage(text);
-    setMessageType(type);
-    setTimeout(() => {
-      setMessage("");
-      setMessageType("");
-    }, 3000);
   };
 
   // Enhanced notification system
@@ -93,45 +69,7 @@ const Order = () => {
     setNotifications(prev => prev.filter(notif => notif.id !== id));
   };
 
-  // Confirmation dialog system
-  const showConfirmation = ({ title, message, onConfirm, onCancel, confirmText = 'Confirm', cancelText = 'Cancel' }) => {
-    setConfirmDialogConfig({
-      title,
-      message,
-      onConfirm,
-      onCancel,
-      confirmText,
-      cancelText
-    });
-    setShowConfirmDialog(true);
-  };
-
-  const hideConfirmation = () => {
-    setShowConfirmDialog(false);
-    setConfirmDialogConfig({});
-  };
-
-  // Replace any potential window.alert usage
-  const showAlert = (message, type = 'info') => {
-    addNotification(message, type);
-  };
-
-  // Replace any potential window.confirm usage
-  const showConfirm = (message, onConfirm, onCancel) => {
-    showConfirmation({
-      title: 'Confirmation',
-      message,
-      onConfirm: () => {
-        onConfirm && onConfirm();
-        hideConfirmation();
-      },
-      onCancel: () => {
-        onCancel && onCancel();
-        hideConfirmation();
-      }
-    });
-  };
-
+  // FIXED: Removed the quantity reset after successful add
   const addToCart = async (menuItemId, quantity = 1, size = null) => {
     try {
       const menuItem = menus.find((menu) => menu._id === menuItemId);
@@ -163,7 +101,8 @@ const Order = () => {
           `${menuItem.name}${sizeName} (${quantity}) added to cart!`,
           "success"
         );
-        setQuantities((prev) => ({ ...prev, [menuItemId]: 1 }));
+        // REMOVED: Don't reset quantity after adding - let user keep their selection
+        // setQuantities((prev) => ({ ...prev, [menuItemId]: 1 }));
       } else {
         const error = await response.json();
         addNotification(
@@ -186,50 +125,40 @@ const Order = () => {
   const getQuantity = (menuItemId) => quantities[menuItemId] || 1;
   const isRamenCategory = (menu) => menu.category === "ramen";
 
-  // Enhanced image handling functions
-  const handleImageError = (menuId) => {
-    console.log(`Image failed to load for menu: ${menuId}`);
-    setImageErrors((prev) => ({ ...prev, [menuId]: true }));
-    setImageLoading((prev) => ({ ...prev, [menuId]: false }));
+  // Optional: Add reset function if you want reset buttons
+  const resetQuantity = (menuItemId) => {
+    setQuantities((prev) => ({ ...prev, [menuItemId]: 1 }));
   };
 
-  const handleImageLoad = (menuId) => {
-    console.log(`Image loaded successfully for menu: ${menuId}`);
-    setImageLoading((prev) => ({ ...prev, [menuId]: false }));
-  };
-
-  const handleImageLoadStart = (menuId) => {
-    setImageLoading((prev) => ({ ...prev, [menuId]: true }));
-  };
-
-  // Enhanced MenuImage component with better error handling and loading states
+  // Clean MenuImage component
   const MenuImage = ({ menu }) => {
-    const hasError = imageErrors[menu._id];
-    const isLoading = imageLoading[menu._id];
+    const [isLoaded, setIsLoaded] = useState(false);
+    const [hasError, setHasError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     
-    // Debug log
-    console.log(`MenuImage for ${menu.name}:`, {
-      imageUrl: menu.imageUrl,
-      hasError,
-      isLoading,
-      image: menu.image
-    });
-    
-    if (!menu.imageUrl || hasError) {
+    const imageSource = menu.imageUrl || menu.dynamicImageUrl;
+
+    const handleLoad = () => {
+      setIsLoaded(true);
+      setIsLoading(false);
+    };
+
+    const handleError = () => {
+      setHasError(true);
+      setIsLoading(false);
+    };
+
+    const handleLoadStart = () => {
+      setIsLoading(true);
+    };
+
+    if (!imageSource || hasError) {
       return (
         <div className="menu-image-placeholder">
           <ChefHat className="placeholder-icon" />
           <span className="placeholder-text">
             {hasError ? "Image failed to load" : "No Image"}
           </span>
-          {/* Debug info */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="debug-info">
-              <small>URL: {menu.imageUrl || 'None'}</small>
-              <br />
-              <small>File: {menu.image || 'None'}</small>
-            </div>
-          )}
         </div>
       );
     }
@@ -241,14 +170,19 @@ const Order = () => {
             <div className="loading-spinner-small"></div>
           </div>
         )}
+        
         <img
-          src={menu.imageUrl}
+          src={imageSource}
           alt={menu.imageAlt || menu.name}
-          className={`menu-image ${isLoading ? 'loading' : ''}`}
-          onError={() => handleImageError(menu._id)}
-          onLoad={() => handleImageLoad(menu._id)}
-          onLoadStart={() => handleImageLoadStart(menu._id)}
+          className={`menu-image ${isLoaded ? 'loaded' : ''}`}
+          onLoad={handleLoad}
+          onError={handleError}
+          onLoadStart={handleLoadStart}
           loading="lazy"
+          style={{
+            opacity: isLoaded ? 1 : 0,
+            transition: 'opacity 0.3s ease'
+          }}
         />
       </div>
     );
@@ -270,7 +204,7 @@ const Order = () => {
   };
 
   const selectSize = (size) => {
-    if (size.isAvailable) {
+    if (size.isAvailable !== false) {
       setModalSelectedSize(size);
     }
   };
@@ -282,11 +216,13 @@ const Order = () => {
     }
   };
 
+  // FIXED: This now properly uses the selected quantity
   const addDirectToCart = (menuItem) => {
+    const currentQuantity = getQuantity(menuItem._id);
     const classicSize = menuItem.sizes?.find(
       (size) => size.label === "Classic"
     );
-    addToCart(menuItem._id, getQuantity(menuItem._id), classicSize);
+    addToCart(menuItem._id, currentQuantity, classicSize);
   };
 
   // Filter and group menus
@@ -320,7 +256,8 @@ const Order = () => {
   };
 
   const renderAvailabilityStatus = (menu) => {
-    return menu.isAvailable ? (
+    const isAvailable = menu.available !== false && menu.isAvailable !== false;
+    return isAvailable ? (
       <div className="availability-status available">
         <CheckCircle className="icon" />
         <span>Available</span>
@@ -333,13 +270,18 @@ const Order = () => {
     );
   };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <div className="loading-spinner">Loading menu...</div>
+if (loading) {
+  return (
+    <div className="loading-container">
+      <div className="loading-spinner">
+        {/* You can replace this with a more complex spinner if desired */}
+        <div className="spinner"></div>
       </div>
-    );
-  }
+      <p className="loading-message">Loading menu items, please wait...</p>
+    </div>
+  );
+}
+
 
   return (
     <div className="order-container">
@@ -391,7 +333,6 @@ const Order = () => {
               {notification.type === "success" && <CheckCircle className="notification-icon" />}
               {notification.type === "error" && <XCircle className="notification-icon" />}
               {notification.type === "info" && <Info className="notification-icon" />}
-              {notification.type === "warning" && <Info className="notification-icon" />}
               <span className="notification-message">{notification.message}</span>
             </div>
             <button 
@@ -406,52 +347,6 @@ const Order = () => {
           </div>
         ))}
       </div>
-
-      {/* Confirmation Dialog */}
-      {showConfirmDialog && (
-        <div className="modal-overlay confirmation-overlay">
-          <div className="confirmation-dialog">
-            <div className="confirmation-header">
-              <h3>{confirmDialogConfig.title}</h3>
-            </div>
-            <div className="confirmation-body">
-              <p>{confirmDialogConfig.message}</p>
-            </div>
-            <div className="confirmation-actions">
-              <button
-                className="btn-cancel"
-                onClick={() => {
-                  confirmDialogConfig.onCancel && confirmDialogConfig.onCancel();
-                  hideConfirmation();
-                }}
-              >
-                {confirmDialogConfig.cancelText}
-              </button>
-              <button
-                className="btn-confirm"
-                onClick={() => {
-                  confirmDialogConfig.onConfirm && confirmDialogConfig.onConfirm();
-                  hideConfirmation();
-                }}
-              >
-                {confirmDialogConfig.confirmText}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Message Display - Keep for backward compatibility */}
-      {message && (
-        <div className={`message ${messageType}`}>
-          {messageType === "success" ? (
-            <CheckCircle className="icon" />
-          ) : (
-            <XCircle className="icon" />
-          )}
-          <span>{message}</span>
-        </div>
-      )}
 
       {/* Menu Content */}
       {filteredMenus.length === 0 ? (
@@ -474,146 +369,142 @@ const Order = () => {
 
               {/* Menu Grid */}
               <div className="menu-grid">
-                {group.items.map((menu) => (
-                  <div
-                    key={menu._id}
-                    className={`menu-card ${
-                      !menu.isAvailable ? "unavailable" : ""
-                    }`}
-                  >
-                    {/* Enhanced Menu Image Container */}
-                    <div className="menu-image-container">
-                      <MenuImage menu={menu} />
-                      {menu.imageUrl && !imageErrors[menu._id] && (
-                        <div className="image-overlay">
-                          <ImageLucide className="overlay-icon" />
+                {group.items.map((menu) => {
+                  const isAvailable = menu.available !== false && menu.isAvailable !== false;
+                  const currentQuantity = getQuantity(menu._id);
+                  
+                  return (
+                    <div
+                      key={menu._id}
+                      className={`menu-card ${!isAvailable ? "unavailable" : ""}`}
+                    >
+                      {/* Menu Image Container */}
+                      <div className="menu-image-container">
+                        <MenuImage menu={menu} />
+                        {(menu.imageUrl || menu.dynamicImageUrl) && (
+                          <div className="image-overlay">
+                            <ImageLucide className="overlay-icon" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="menu-card-content">
+                        <div className="menu-title-row">
+                          <h3>{menu.name}</h3>
+                          {renderAvailabilityStatus(menu)}
                         </div>
-                      )}
-                      {/* Image status indicator */}
-                      {menu.imageUrl && (
-                        <div className="image-status-indicator">
-                          {imageErrors[menu._id] ? (
-                            <XCircle className="status-icon error" />
-                          ) : imageLoading[menu._id] ? (
-                            <div className="status-icon loading">⟳</div>
+
+                        {menu.description && (
+                          <p className="menu-description">{menu.description}</p>
+                        )}
+
+                        {/* Price Display */}
+                        <div className="menu-price-section">
+                          {isRamenCategory(menu) ? (
+                            <div className="size-preview">
+                              <span className="size-count">
+                                {menu.sizes?.length || 0} size
+                                {(menu.sizes?.length || 0) !== 1 ? "s" : ""}{" "}
+                                available
+                              </span>
+                              {menu.sizes && menu.sizes.length > 0 && (
+                                <div className="price-range">
+                                  {menu.sizes.length === 1 ? (
+                                    <span className="price">
+                                      ₱{menu.sizes[0].price.toFixed(2)}
+                                    </span>
+                                  ) : (
+                                    <span className="price">
+                                      ₱
+                                      {Math.min(
+                                        ...menu.sizes.map((s) => s.price)
+                                      ).toFixed(2)}{" "}
+                                      - ₱
+                                      {Math.max(
+                                        ...menu.sizes.map((s) => s.price)
+                                      ).toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           ) : (
-                            <CheckCircle className="status-icon success" />
+                            <div className="single-price">
+                              <span className="price">
+                                ₱{menu.basePrice?.toFixed(2) || "N/A"}
+                              </span>
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
 
-                    <div className="menu-card-content">
-                      <div className="menu-title-row">
-                        <h3>{menu.name}</h3>
-                        {renderAvailabilityStatus(menu)}
-                      </div>
+                        {/* Category Badge */}
+                        <div className="menu-category-badge">{menu.category}</div>
 
-                      {menu.description && (
-                        <p className="menu-description">{menu.description}</p>
-                      )}
-
-                      {/* Price Display */}
-                      <div className="menu-price-section">
-                        {isRamenCategory(menu) ? (
-                          <div className="size-preview">
-                            <span className="size-count">
-                              {menu.sizes?.length || 0} size
-                              {(menu.sizes?.length || 0) !== 1 ? "s" : ""}{" "}
-                              available
-                            </span>
-                            {menu.sizes && menu.sizes.length > 0 && (
-                              <div className="price-range">
-                                {menu.sizes.length === 1 ? (
-                                  <span className="price">
-                                    ₱{menu.sizes[0].price.toFixed(2)}
-                                  </span>
-                                ) : (
-                                  <span className="price">
-                                    ₱
-                                    {Math.min(
-                                      ...menu.sizes.map((s) => s.price)
-                                    ).toFixed(2)}{" "}
-                                    - ₱
-                                    {Math.max(
-                                      ...menu.sizes.map((s) => s.price)
-                                    ).toFixed(2)}
-                                  </span>
-                                )}
+                        {/* Actions - UPDATED */}
+                        <div className="menu-actions">
+                          {isAvailable && !isRamenCategory(menu) && (
+                            <div className="quantity-controls">
+                              <button
+                                onClick={() =>
+                                  updateQuantity(menu._id, currentQuantity - 1)
+                                }
+                                disabled={currentQuantity <= 1}
+                                className="quantity-btn"
+                              >
+                                <Minus className="icon" />
+                              </button>
+                              <div className="quantity-display">
+                                {currentQuantity}
                               </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="single-price">
-                            <span className="price">
-                              ₱{menu.basePrice?.toFixed(2) || "N/A"}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Category Badge */}
-                      <div className="menu-category-badge">{menu.category}</div>
-
-                      {/* Actions */}
-                      <div className="menu-actions">
-                        {menu.isAvailable && !isRamenCategory(menu) && (
-                          <div className="quantity-controls">
-                            <button
-                              onClick={() =>
-                                updateQuantity(
-                                  menu._id,
-                                  getQuantity(menu._id) - 1
-                                )
-                              }
-                              disabled={getQuantity(menu._id) <= 1}
-                              className="quantity-btn"
-                            >
-                              <Minus className="icon" />
-                            </button>
-                            <div className="quantity-display">
-                              {getQuantity(menu._id)}
+                              <button
+                                onClick={() =>
+                                  updateQuantity(menu._id, currentQuantity + 1)
+                                }
+                                className="quantity-btn"
+                              >
+                                <Plus className="icon" />
+                              </button>
+                              
+                              {/* Optional: Add reset button if quantity > 1 */}
+                              {currentQuantity > 1 && (
+                                <button
+                                  onClick={() => resetQuantity(menu._id)}
+                                  className="reset-btn"
+                                  title="Reset to 1"
+                                >
+                                  Reset
+                                </button>
+                              )}
                             </div>
-                            <button
-                              onClick={() =>
-                                updateQuantity(
-                                  menu._id,
-                                  getQuantity(menu._id) + 1
-                                )
-                              }
-                              className="quantity-btn"
-                            >
-                              <Plus className="icon" />
-                            </button>
-                          </div>
-                        )}
+                          )}
 
-                        <button
-                          onClick={() => {
-                            if (isRamenCategory(menu)) {
-                              openSizeModal(menu);
-                            } else {
-                              addDirectToCart(menu);
-                            }
-                          }}
-                          disabled={!menu.isAvailable}
-                          className={`add-to-cart-btn ${
-                            !menu.isAvailable ? "disabled" : ""
-                          }`}
-                        >
-                          <ShoppingCart className="icon" />
-                          <span>
-                            {!menu.isAvailable
-                              ? "Unavailable"
-                              : isRamenCategory(menu)
-                              ? "Choose Size"
-                              : "Add to Cart"}
-                          </span>
-                        </button>
+                          <button
+                            onClick={() => {
+                              if (isRamenCategory(menu)) {
+                                openSizeModal(menu);
+                              } else {
+                                addDirectToCart(menu);
+                              }
+                            }}
+                            disabled={!isAvailable}
+                            className={`add-to-cart-btn ${
+                              !isAvailable ? "disabled" : ""
+                            }`}
+                          >
+                            <ShoppingCart className="icon" />
+                            <span>
+                              {!isAvailable
+                                ? "Unavailable"
+                                : isRamenCategory(menu)
+                                ? "Choose Size"
+                                : `Add ${currentQuantity} to Cart`}
+                            </span>
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))}
@@ -626,7 +517,6 @@ const Order = () => {
           <div className="size-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-header-content">
-                {/* Enhanced Modal Image */}
                 <div className="modal-image-container">
                   <MenuImage menu={selectedMenuItem} />
                 </div>
@@ -652,7 +542,7 @@ const Order = () => {
                   <div
                     key={size._id}
                     className={`size-option ${
-                      !size.isAvailable ? "size-unavailable" : ""
+                      size.isAvailable === false ? "size-unavailable" : ""
                     } ${modalSelectedSize?._id === size._id ? "selected" : ""}`}
                     onClick={() => selectSize(size)}
                   >
@@ -663,7 +553,7 @@ const Order = () => {
                           ₱{size.price.toFixed(2)}
                         </span>
                       </div>
-                      {!size.isAvailable && (
+                      {size.isAvailable === false && (
                         <span className="unavailable-text">Unavailable</span>
                       )}
                     </div>
@@ -712,7 +602,7 @@ const Order = () => {
                   <button
                     onClick={addSizeToCart}
                     className="confirm-btn"
-                    disabled={!modalSelectedSize.isAvailable}
+                    disabled={modalSelectedSize.isAvailable === false}
                   >
                     Add to Cart - ₱
                     {(modalSelectedSize.price * modalQuantity).toFixed(2)}

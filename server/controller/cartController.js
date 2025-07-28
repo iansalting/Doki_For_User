@@ -4,9 +4,19 @@ import Menu from "../model/menuModel.js";
 
 const addToCart = async (req, res, next) => {
   try {
-    const { menuItemId, selectedSize } = req.body;
+    const { menuItemId, selectedSize, quantity: requestedQuantity } = req.body;
     const userId = req.user._id;
-    const quantity = 1; // Always add 1 by default
+    
+    // FIXED: Accept quantity from request body, default to 1 if not provided
+    const quantity = requestedQuantity && requestedQuantity > 0 ? parseInt(requestedQuantity) : 1;
+    
+    // Optional: Add maximum quantity validation
+    if (quantity > 99) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Maximum quantity per add is 99" 
+      });
+    }
 
     // Validate IDs
     if (
@@ -101,12 +111,13 @@ const addToCart = async (req, res, next) => {
     );
 
     if (existingItem) {
-      existingItem.quantity += 1;
+      // FIXED: Add the requested quantity, not just 1
+      existingItem.quantity += quantity;
     } else {
       user.cart.push({
         productId: menuItemId,
         selectedSize: finalSelectedSize,
-        quantity,
+        quantity, // FIXED: Use the actual requested quantity
         // Optionally store additional info for easier frontend handling
         price: sizeObject.price,
         sizeId: sizeObject._id,
@@ -117,13 +128,14 @@ const addToCart = async (req, res, next) => {
 
     return res.status(200).json({
       success: true,
-      message: `Item added to cart successfully (${finalSelectedSize} size)`,
+      message: `${quantity} item${quantity > 1 ? 's' : ''} added to cart successfully (${finalSelectedSize} size)`,
       cart: user.cart,
       addedItem: {
         productId: menuItemId,
         selectedSize: finalSelectedSize,
         price: sizeObject.price,
         quantity: existingItem ? existingItem.quantity : quantity,
+        addedQuantity: quantity, // Show how many were just added
       },
     });
   } catch (error) {

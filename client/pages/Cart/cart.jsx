@@ -287,7 +287,7 @@ function Cart({ userId }) {
         
         // Redirect to order confirmation
         setTimeout(() => {
-          window.location.href = `/order-confirmation/${orderData._id}`;
+          window.location.href = `/order`;
         }, 3000);
         
       } else {
@@ -339,16 +339,19 @@ function Cart({ userId }) {
     }
   }, [fetchCartData, addNotification]);
 
-  if (loading) {
-    return (
-      <div className="cart-container">
+ if (loading) {
+  return (
+    <div className="cart-container">
+      <div className="loading-container">
         <div className="loading-spinner">
           <div className="spinner"></div>
-          <p>Loading your cart...</p>
         </div>
+        <p className="loading-message">Loading your cart, please wait...</p>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   if (error) {
     return (

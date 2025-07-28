@@ -18,7 +18,7 @@ const MenuItemSchema = new mongoose.Schema(
       trim: true,
       enum: [
         "ramen",
-        "riceBowls",
+        "riceBowls", 
         "drinks",
         "sides",
         "toppings",
@@ -31,7 +31,6 @@ const MenuItemSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-
     image: {
       type: String,
       trim: true,
@@ -39,7 +38,14 @@ const MenuItemSchema = new mongoose.Schema(
     imageAlt: {
       type: String,
       trim: true,
-      // Alt text for accessibility (e.g., "Tonkotsu Ramen")
+    },
+    imageUrlPort5000: {
+      type: String,
+      trim: true,
+    },
+    imageUrlPort8000: {
+      type: String,
+      trim: true,
     },
     sizes: [
       {
@@ -71,6 +77,23 @@ const MenuItemSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// ADD THIS: Dynamic URL method that works for both systems
+MenuItemSchema.methods.getImageUrl = function() {
+  if (!this.image) return null;
+  
+  const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+  return `${baseUrl}/uploads/menu/${this.image}`;
+};
+
+// ADD THIS: Virtual field for easy access in JSON responses
+MenuItemSchema.virtual('dynamicImageUrl').get(function() {
+  return this.getImageUrl();
+});
+
+// Make sure virtuals are included when converting to JSON
+MenuItemSchema.set('toJSON', { virtuals: true });
+MenuItemSchema.set('toObject', { virtuals: true });
 
 const MenuItem = mongoose.model("Menu", MenuItemSchema);
 export default MenuItem;
