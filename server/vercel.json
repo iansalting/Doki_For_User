@@ -1,12 +1,19 @@
 {
-    "version":2,
+    "version": 2,
     "builds": [
-        {"src": "*.js", "use": "vercel/node"}
+        {"src": "server.js", "use": "vercel/node"}
     ],
     "routes": [
         {
+            "src": "/api/(.*)",
+            "dest": "/api/$1"
+        },
+        {
             "src": "/(.*)",
-            "dest": "/"
+            "dest": "/index.js"
         }
-    ]
+    ],
+    "env": {
+        "MY_ENV_VAR": "value"
+    }
 }
