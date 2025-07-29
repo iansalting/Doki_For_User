@@ -5,8 +5,8 @@
     ],
     "routes": [
         {
-            "src": "/api/(.*)",
-            "dest": "/api/$1"
+            "src": "/server/(.*)",
+            "dest": "/server/$1"
         },
         {
             "src": "/(.*)",
